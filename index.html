@@ -3,193 +3,116 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HRMS Live Dashboard - Google Sheets</title>
+  <title>HRMS Dashboard - Live Google Sheets</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-  <!-- PapaParse for parsing CSV -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 </head>
 <body class="bg-gray-100 font-sans">
 
   <div class="flex h-screen overflow-hidden">
     <!-- Sidebar -->
-    <aside class="w-64 bg-slate-800 text-white flex flex-col justify-between p-4">
+    <aside class="w-64 bg-slate-900 text-white flex flex-col justify-between p-4 shadow-lg">
       <div>
-        <div class="flex items-center gap-3 text-xl font-bold text-blue-400 mb-8 p-2">
-          <i class="fa-solid fa-users-gear"></i>
-          <span>HRMS Dashboard</span>
+        <div class="flex items-center gap-3 text-xl font-bold text-blue-400 mb-8 p-2 border-b border-slate-700 pb-4">
+          <i class="fa-solid fa-users-gear text-2xl"></i>
+          <span>Company HRMS</span>
         </div>
-        <nav class="space-y-2">
-          <button onclick="switchTab('sheet1')" id="tabBtn1" class="w-full text-left flex items-center gap-3 p-3 rounded-lg bg-blue-600 text-white font-medium transition">
-            <i class="fa-solid fa-table"></i> Sheet 1 (GID: 622384515)
+        
+        <!-- Navigation Buttons -->
+        <nav class="space-y-3">
+          <button onclick="showSheet('hr')" id="btnHR" class="w-full text-left flex items-center gap-3 p-3 rounded-xl bg-blue-600 text-white font-medium shadow transition-all duration-200">
+            <i class="fa-solid fa-id-card text-lg"></i> HR Sheet
           </button>
-          <button onclick="switchTab('sheet2')" id="tabBtn2" class="w-full text-left flex items-center gap-3 p-3 rounded-lg bg-slate-700 hover:bg-slate-600 text-white font-medium transition">
-            <i class="fa-solid fa-table"></i> Sheet 2 (GID: 0)
+          
+          <button onclick="showSheet('ops')" id="btnOps" class="w-full text-left flex items-center gap-3 p-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition-all duration-200">
+            <i class="fa-solid fa-gears text-lg"></i> Operations Sheet
           </button>
         </nav>
       </div>
-      <div class="text-xs text-slate-400 text-center">
-        Live Google Sheets Sync
+
+      <div class="text-xs text-slate-400 text-center border-t border-slate-800 pt-4">
+        <p class="flex items-center justify-center gap-1">
+          <i class="fa-solid fa-sync text-green-400 animate-spin"></i> Live Google Sheets Sync
+        </p>
+        <p class="mt-1">&copy; 2026 HRMS System</p>
       </div>
     </aside>
 
-    <!-- Main Content -->
-    <main class="flex-1 overflow-y-auto p-8">
+    <!-- Main Content Area -->
+    <main class="flex-1 flex flex-col overflow-hidden bg-gray-50">
       
-      <!-- Top Bar -->
-      <div class="flex justify-between items-center mb-6">
+      <!-- Top Header -->
+      <div class="bg-white border-b border-gray-200 px-8 py-4 flex justify-between items-center shadow-sm">
         <div>
-          <h1 class="text-2xl font-bold text-gray-800" id="currentSheetTitle">Google Sheet Data</h1>
-          <p class="text-gray-500 text-sm">Ye data live aapke Google Sheets se fetch ho raha hai.</p>
+          <h1 id="tabTitle" class="text-2xl font-bold text-gray-800">HR Directory & Data</h1>
+          <p class="text-gray-500 text-sm">Google Sheets se live data view karein.</p>
         </div>
-        <button onclick="fetchData()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 font-medium text-sm transition">
-          <i class="fa-solid fa-rotate-right"></i> Refresh Data
-        </button>
-      </div>
-
-      <!-- Stats Cards -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex items-center gap-4">
-          <div class="p-4 bg-blue-100 text-blue-600 rounded-lg text-2xl">
-            <i class="fa-solid fa-list-check"></i>
-          </div>
-          <div>
-            <p class="text-sm text-gray-500">Total Rows</p>
-            <h3 id="totalRowsCount" class="text-2xl font-bold text-gray-800">0</h3>
-          </div>
-        </div>
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex items-center gap-4">
-          <div class="p-4 bg-green-100 text-green-600 rounded-lg text-2xl">
-            <i class="fa-solid fa-columns"></i>
-          </div>
-          <div>
-            <p class="text-sm text-gray-500">Total Columns</p>
-            <h3 id="totalColsCount" class="text-2xl font-bold text-gray-800">0</h3>
-          </div>
+        <div class="flex items-center gap-3">
+          <button onclick="reloadIframes()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition">
+            <i class="fa-solid fa-rotate-right"></i> Refresh Sheet
+          </button>
         </div>
       </div>
 
-      <!-- Loading Indicator -->
-      <div id="loading" class="hidden text-center py-12">
-        <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-600 border-t-transparent"></div>
-        <p class="mt-2 text-gray-600 font-medium">Google Sheets se data load ho raha hai...</p>
-      </div>
+      <!-- Sheet Display Container -->
+      <div class="flex-1 p-6 overflow-hidden">
+        <div class="w-full h-full bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+          
+          <!-- HR Sheet Frame -->
+          <iframe id="frameHR" 
+            src="https://docs.google.com/spreadsheets/d/e/2PACX-1vR6DAT9uKgT8hruMlMEhJZE2X0O2Rm0g1YqkrkOXv0KSGkwdFqzAK5jRdxpDlvS_xQmwsf5EVTqC3Z-/pubhtml?gid=622384515&amp;single=true&amp;widget=true&amp;headers=false" 
+            class="w-full h-full border-0">
+          </iframe>
 
-      <!-- Main Data Table -->
-      <div id="tableContainer" class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-        <div class="overflow-x-auto">
-          <table class="w-full text-left border-collapse" id="dataTable">
-            <thead id="tableHeader" class="bg-gray-50 text-gray-700 text-xs uppercase tracking-wider">
-              <!-- Dynamically populated headers -->
-            </thead>
-            <tbody id="tableBody" class="divide-y divide-gray-200 text-sm text-gray-700">
-              <!-- Dynamically populated rows -->
-            </tbody>
-          </table>
+          <!-- Operations Sheet Frame -->
+          <iframe id="frameOps" 
+            src="https://docs.google.com/spreadsheets/d/e/2PACX-1vR6DAT9uKgT8hruMlMEhJZE2X0O2Rm0g1YqkrkOXv0KSGkwdFqzAK5jRdxpDlvS_xQmwsf5EVTqC3Z-/pubhtml?gid=0&amp;single=true&amp;widget=true&amp;headers=false" 
+            class="w-full h-full border-0 hidden">
+          </iframe>
+
         </div>
       </div>
 
     </main>
   </div>
 
+  <!-- JavaScript for Switching Tabs -->
   <script>
-    // Google Sheets Live CSV Endpoints
-    const sheetUrls = {
-      sheet1: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR6DAT9uKgT8hruMlMEhJZE2X0O2Rm0g1YqkrkOXv0KSGkwdFqzAK5jRdxpDlvS_xQmwsf5EVTqC3Z-/pub?gid=622384515&single=true&output=csv',
-      sheet2: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR6DAT9uKgT8hruMlMEhJZE2X0O2Rm0g1YqkrkOXv0KSGkwdFqzAK5jRdxpDlvS_xQmwsf5EVTqC3Z-/pub?gid=0&single=true&output=csv'
-    };
+    function showSheet(sheetType) {
+      const frameHR = document.getElementById('frameHR');
+      const frameOps = document.getElementById('frameOps');
+      const btnHR = document.getElementById('btnHR');
+      const btnOps = document.getElementById('btnOps');
+      const tabTitle = document.getElementById('tabTitle');
 
-    let activeSheet = 'sheet1';
-
-    function switchTab(sheetKey) {
-      activeSheet = sheetKey;
-      
-      // Update Tab Styles
-      const tab1 = document.getElementById('tabBtn1');
-      const tab2 = document.getElementById('tabBtn2');
-
-      if (sheetKey === 'sheet1') {
-        tab1.className = "w-full text-left flex items-center gap-3 p-3 rounded-lg bg-blue-600 text-white font-medium transition";
-        tab2.className = "w-full text-left flex items-center gap-3 p-3 rounded-lg bg-slate-700 hover:bg-slate-600 text-white font-medium transition";
-        document.getElementById('currentSheetTitle').textContent = "Google Sheet 1 (GID: 622384515)";
+      if (sheetType === 'hr') {
+        frameHR.classList.remove('hidden');
+        frameOps.classList.add('hidden');
+        
+        btnHR.className = "w-full text-left flex items-center gap-3 p-3 rounded-xl bg-blue-600 text-white font-medium shadow transition-all duration-200";
+        btnOps.className = "w-full text-left flex items-center gap-3 p-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition-all duration-200";
+        
+        tabTitle.textContent = "HR Directory & Data";
       } else {
-        tab2.className = "w-full text-left flex items-center gap-3 p-3 rounded-lg bg-blue-600 text-white font-medium transition";
-        tab1.className = "w-full text-left flex items-center gap-3 p-3 rounded-lg bg-slate-700 hover:bg-slate-600 text-white font-medium transition";
-        document.getElementById('currentSheetTitle').textContent = "Google Sheet 2 (GID: 0)";
-      }
+        frameHR.classList.add('hidden');
+        frameOps.classList.remove('hidden');
 
-      fetchData();
-    }
+        btnOps.className = "w-full text-left flex items-center gap-3 p-3 rounded-xl bg-blue-600 text-white font-medium shadow transition-all duration-200";
+        btnHR.className = "w-full text-left flex items-center gap-3 p-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition-all duration-200";
 
-    function fetchData() {
-      const loading = document.getElementById('loading');
-      const tableContainer = document.getElementById('tableContainer');
-      const url = sheetUrls[activeSheet];
-
-      loading.classList.remove('hidden');
-      tableContainer.classList.add('hidden');
-
-      Papa.parse(url, {
-        download: true,
-        header: false,
-        skipEmptyLines: true,
-        complete: function(results) {
-          renderTable(results.data);
-          loading.classList.add('hidden');
-          tableContainer.classList.remove('hidden');
-        },
-        error: function(err) {
-          alert('Google Sheet data fetch karne me error aaya.');
-          console.error(err);
-          loading.classList.add('hidden');
-        }
-      });
-    }
-
-    function renderTable(data) {
-      const headerEl = document.getElementById('tableHeader');
-      const bodyEl = document.getElementById('tableBody');
-      const totalRowsEl = document.getElementById('totalRowsCount');
-      const totalColsEl = document.getElementById('totalColsCount');
-
-      headerEl.innerHTML = '';
-      bodyEl.innerHTML = '';
-
-      if (!data || data.length === 0) {
-        totalRowsEl.textContent = 0;
-        totalColsEl.textContent = 0;
-        bodyEl.innerHTML = '<tr><td class="p-4 text-center text-gray-500">Sheet me koi data nahi mila.</td></tr>';
-        return;
-      }
-
-      // Headers (First Row)
-      const headers = data[0];
-      totalColsEl.textContent = headers.length;
-      totalRowsEl.textContent = data.length - 1;
-
-      let headerRowHTML = '<tr>';
-      headers.forEach(header => {
-        headerRowHTML += `<th class="p-3 border-b font-bold border-gray-200">${header}</th>`;
-      });
-      headerRowHTML += '</tr>';
-      headerEl.innerHTML = headerRowHTML;
-
-      // Data Rows
-      for (let i = 1; i < data.length; i++) {
-        const row = data[i];
-        let rowHTML = '<tr class="hover:bg-gray-50 transition">';
-        row.forEach(cell => {
-          rowHTML += `<td class="p-3 border-b border-gray-100">${cell || ''}</td>`;
-        });
-        rowHTML += '</tr>';
-        bodyEl.innerHTML += rowHTML;
+        tabTitle.textContent = "Operations Sheet Data";
       }
     }
 
-    // Initialize Page
-    fetchData();
+    function reloadIframes() {
+      const frameHR = document.getElementById('frameHR');
+      const frameOps = document.getElementById('frameOps');
+      frameHR.src = frameHR.src;
+      frameOps.src = frameOps.src;
+    }
   </script>
+
 </body>
 </html>
