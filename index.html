@@ -1,118 +1,314 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HRMS Dashboard - Live Google Sheets</title>
-  <!-- Tailwind CSS CDN -->
+  <title>Enterprise HRMS Dashboard</title>
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- FontAwesome Icons -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-</head>
-<body class="bg-gray-100 font-sans">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Font Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- PapaParse for CSV Data Parsing -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
-  <div class="flex h-screen overflow-hidden">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    /* Custom Scrollbar for Table */
+    .custom-scrollbar::-webkit-scrollbar {
+      height: 8px;
+      width: 8px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased h-screen overflow-hidden">
+
+  <div class="flex h-full">
     <!-- Sidebar -->
-    <aside class="w-64 bg-slate-900 text-white flex flex-col justify-between p-4 shadow-lg">
+    <aside class="w-64 bg-slate-900 text-slate-300 flex flex-col justify-between p-5 shadow-xl z-20">
       <div>
-        <div class="flex items-center gap-3 text-xl font-bold text-blue-400 mb-8 p-2 border-b border-slate-700 pb-4">
-          <i class="fa-solid fa-users-gear text-2xl"></i>
-          <span>Company HRMS</span>
+        <!-- Logo -->
+        <div class="flex items-center gap-3 px-2 py-3 mb-6 border-b border-slate-800">
+          <div class="bg-blue-600 text-white p-2.5 rounded-xl shadow-lg shadow-blue-500/30">
+            <i class="fa-solid fa-users-gear text-xl"></i>
+          </div>
+          <div>
+            <h2 class="font-bold text-white text-base tracking-wide leading-tight">HR Portal</h2>
+            <span class="text-xs text-slate-400 font-medium">Enterprise Management</span>
+          </div>
         </div>
-        
-        <!-- Navigation Buttons -->
-        <nav class="space-y-3">
-          <button onclick="showSheet('hr')" id="btnHR" class="w-full text-left flex items-center gap-3 p-3 rounded-xl bg-blue-600 text-white font-medium shadow transition-all duration-200">
-            <i class="fa-solid fa-id-card text-lg"></i> HR Sheet
+
+        <!-- Navigation Menu -->
+        <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-3 mb-3">Dashboards</div>
+        <nav class="space-y-2">
+          <button onclick="switchTab('hr')" id="btnHR" class="w-full text-left flex items-center justify-between p-3 rounded-xl bg-blue-600 text-white font-medium shadow-md shadow-blue-600/20 transition-all duration-200">
+            <span class="flex items-center gap-3"><i class="fa-solid fa-id-badge text-lg"></i> HR Onboarding</span>
+            <i class="fa-solid fa-chevron-right text-xs opacity-70"></i>
           </button>
           
-          <button onclick="showSheet('ops')" id="btnOps" class="w-full text-left flex items-center gap-3 p-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition-all duration-200">
-            <i class="fa-solid fa-gears text-lg"></i> Operations Sheet
+          <button onclick="switchTab('ops')" id="btnOps" class="w-full text-left flex items-center justify-between p-3 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-slate-200 font-medium transition-all duration-200">
+            <span class="flex items-center gap-3"><i class="fa-solid fa-list-check text-lg"></i> Operations Sheet</span>
+            <i class="fa-solid fa-chevron-right text-xs opacity-70"></i>
           </button>
         </nav>
       </div>
 
-      <div class="text-xs text-slate-400 text-center border-t border-slate-800 pt-4">
-        <p class="flex items-center justify-center gap-1">
-          <i class="fa-solid fa-sync text-green-400 animate-spin"></i> Live Google Sheets Sync
-        </p>
-        <p class="mt-1">&copy; 2026 HRMS System</p>
+      <!-- Sync Status Footer -->
+      <div class="p-3 bg-slate-800/60 rounded-xl border border-slate-800">
+        <div class="flex items-center gap-2 text-xs font-medium text-emerald-400">
+          <span class="relative flex h-2 w-2">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+          </span>
+          Live Google Sheets Sync
+        </div>
+        <p class="text-[11px] text-slate-500 mt-1">Auto-updates on page refresh</p>
       </div>
     </aside>
 
-    <!-- Main Content Area -->
-    <main class="flex-1 flex flex-col overflow-hidden bg-gray-50">
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col h-full overflow-hidden">
       
       <!-- Top Header -->
-      <div class="bg-white border-b border-gray-200 px-8 py-4 flex justify-between items-center shadow-sm">
+      <header class="bg-white border-b border-slate-200 px-8 py-4 flex justify-between items-center shadow-sm z-10">
         <div>
-          <h1 id="tabTitle" class="text-2xl font-bold text-gray-800">HR Directory & Data</h1>
-          <p class="text-gray-500 text-sm">Google Sheets se live data view karein.</p>
+          <h1 id="tabTitle" class="text-2xl font-bold text-slate-900 tracking-tight">HR Onboarding Directory</h1>
+          <p class="text-xs text-slate-500 mt-0.5">Real-time candidate details and onboarding status</p>
         </div>
-        <div class="flex items-center gap-3">
-          <button onclick="reloadIframes()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition">
-            <i class="fa-solid fa-rotate-right"></i> Refresh Sheet
+
+        <!-- Header Actions -->
+        <div class="flex items-center gap-4">
+          <!-- Search Bar -->
+          <div class="relative w-64">
+            <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+            <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="Search employee, designation..." class="w-full pl-9 pr-4 py-2 bg-slate-100 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition">
+          </div>
+
+          <!-- Refresh Button -->
+          <button onclick="loadSheetData()" class="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 shadow-sm transition">
+            <i class="fa-solid fa-rotate-right"></i> Sync Data
           </button>
         </div>
-      </div>
+      </header>
 
-      <!-- Sheet Display Container -->
-      <div class="flex-1 p-6 overflow-hidden">
-        <div class="w-full h-full bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+      <!-- Dashboard View Body -->
+      <div class="flex-1 p-8 overflow-hidden flex flex-col">
+
+        <!-- Quick Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
+          <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 flex items-center gap-4">
+            <div class="p-3 bg-blue-50 text-blue-600 rounded-xl">
+              <i class="fa-solid fa-user-group text-xl"></i>
+            </div>
+            <div>
+              <p class="text-xs font-semibold uppercase text-slate-400 tracking-wider">Total Candidates</p>
+              <h3 id="statTotal" class="text-2xl font-bold text-slate-800 mt-0.5">--</h3>
+            </div>
+          </div>
+
+          <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 flex items-center gap-4">
+            <div class="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
+              <i class="fa-solid fa-table-columns text-xl"></i>
+            </div>
+            <div>
+              <p class="text-xs font-semibold uppercase text-slate-400 tracking-wider">Data Columns</p>
+              <h3 id="statCols" class="text-2xl font-bold text-slate-800 mt-0.5">--</h3>
+            </div>
+          </div>
+
+          <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 flex items-center gap-4">
+            <div class="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
+              <i class="fa-solid fa-circle-check text-xl"></i>
+            </div>
+            <div>
+              <p class="text-xs font-semibold uppercase text-slate-400 tracking-wider">Source Status</p>
+              <h3 class="text-base font-bold text-emerald-600 mt-0.5">Connected</h3>
+            </div>
+          </div>
+        </div>
+
+        <!-- Table Container Card -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 flex-1 flex flex-col overflow-hidden">
           
-          <!-- HR Sheet Frame -->
-          <iframe id="frameHR" 
-            src="https://docs.google.com/spreadsheets/d/e/2PACX-1vR6DAT9uKgT8hruMlMEhJZE2X0O2Rm0g1YqkrkOXv0KSGkwdFqzAK5jRdxpDlvS_xQmwsf5EVTqC3Z-/pubhtml?gid=622384515&amp;single=true&amp;widget=true&amp;headers=false" 
-            class="w-full h-full border-0">
-          </iframe>
+          <!-- Table Title Bar -->
+          <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-list-check text-blue-600 text-sm"></i>
+              <h3 id="directoryHeading" class="font-bold text-slate-800 text-sm tracking-wide">Candidate Records Directory</h3>
+            </div>
+            <span id="filteredCount" class="text-xs font-medium text-slate-500 bg-slate-200/60 px-2.5 py-1 rounded-full">Showing all entries</span>
+          </div>
 
-          <!-- Operations Sheet Frame -->
-          <iframe id="frameOps" 
-            src="https://docs.google.com/spreadsheets/d/e/2PACX-1vR6DAT9uKgT8hruMlMEhJZE2X0O2Rm0g1YqkrkOXv0KSGkwdFqzAK5jRdxpDlvS_xQmwsf5EVTqC3Z-/pubhtml?gid=0&amp;single=true&amp;widget=true&amp;headers=false" 
-            class="w-full h-full border-0 hidden">
-          </iframe>
+          <!-- Loading State -->
+          <div id="loader" class="flex-1 flex flex-col items-center justify-center p-8">
+            <div class="w-10 h-10 border-4 border-blue-600/20 border-t-blue-600 rounded-full animate-spin mb-3"></div>
+            <p class="text-xs font-medium text-slate-500">Fetching live data from Google Sheets...</p>
+          </div>
+
+          <!-- Table View -->
+          <div id="tableWrapper" class="flex-1 overflow-auto custom-scrollbar hidden">
+            <table class="w-full text-left border-collapse" id="hrmsTable">
+              <thead class="bg-slate-100/80 text-slate-600 uppercase text-[11px] tracking-wider font-semibold sticky top-0 z-10 backdrop-blur-sm border-b border-slate-200">
+                <tr id="tableHead"></tr>
+              </thead>
+              <tbody id="tableBody" class="divide-y divide-slate-100 text-xs text-slate-700 font-medium"></tbody>
+            </table>
+          </div>
 
         </div>
-      </div>
 
+      </div>
     </main>
   </div>
 
-  <!-- JavaScript for Switching Tabs -->
   <script>
-    function showSheet(sheetType) {
-      const frameHR = document.getElementById('frameHR');
-      const frameOps = document.getElementById('frameOps');
+    // Live CSV URL Links for Google Sheets
+    const sheetCsvUrls = {
+      hr: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR6DAT9uKgT8hruMlMEhJZE2X0O2Rm0g1YqkrkOXv0KSGkwdFqzAK5jRdxpDlvS_xQmwsf5EVTqC3Z-/pub?gid=622384515&single=true&output=csv',
+      ops: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR6DAT9uKgT8hruMlMEhJZE2X0O2Rm0g1YqkrkOXv0KSGkwdFqzAK5jRdxpDlvS_xQmwsf5EVTqC3Z-/pub?gid=0&single=true&output=csv'
+    };
+
+    let activeTab = 'hr';
+    let globalParsedData = [];
+
+    function switchTab(tab) {
+      activeTab = tab;
+      
       const btnHR = document.getElementById('btnHR');
       const btnOps = document.getElementById('btnOps');
       const tabTitle = document.getElementById('tabTitle');
 
-      if (sheetType === 'hr') {
-        frameHR.classList.remove('hidden');
-        frameOps.classList.add('hidden');
-        
-        btnHR.className = "w-full text-left flex items-center gap-3 p-3 rounded-xl bg-blue-600 text-white font-medium shadow transition-all duration-200";
-        btnOps.className = "w-full text-left flex items-center gap-3 p-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition-all duration-200";
-        
-        tabTitle.textContent = "HR Directory & Data";
+      if (tab === 'hr') {
+        btnHR.className = "w-full text-left flex items-center justify-between p-3 rounded-xl bg-blue-600 text-white font-medium shadow-md shadow-blue-600/20 transition-all duration-200";
+        btnOps.className = "w-full text-left flex items-center justify-between p-3 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-slate-200 font-medium transition-all duration-200";
+        tabTitle.textContent = "HR Onboarding Directory";
       } else {
-        frameHR.classList.add('hidden');
-        frameOps.classList.remove('hidden');
-
-        btnOps.className = "w-full text-left flex items-center gap-3 p-3 rounded-xl bg-blue-600 text-white font-medium shadow transition-all duration-200";
-        btnHR.className = "w-full text-left flex items-center gap-3 p-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition-all duration-200";
-
-        tabTitle.textContent = "Operations Sheet Data";
+        btnOps.className = "w-full text-left flex items-center justify-between p-3 rounded-xl bg-blue-600 text-white font-medium shadow-md shadow-blue-600/20 transition-all duration-200";
+        btnHR.className = "w-full text-left flex items-center justify-between p-3 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-slate-200 font-medium transition-all duration-200";
+        tabTitle.textContent = "Operations Sheet Directory";
       }
+
+      document.getElementById('searchInput').value = '';
+      loadSheetData();
     }
 
-    function reloadIframes() {
-      const frameHR = document.getElementById('frameHR');
-      const frameOps = document.getElementById('frameOps');
-      frameHR.src = frameHR.src;
-      frameOps.src = frameOps.src;
+    function loadSheetData() {
+      const loader = document.getElementById('loader');
+      const tableWrapper = document.getElementById('tableWrapper');
+      
+      loader.classList.remove('hidden');
+      tableWrapper.classList.add('hidden');
+
+      Papa.parse(sheetCsvUrls[activeTab], {
+        download: true,
+        header: false,
+        skipEmptyLines: 'greedy',
+        complete: function(results) {
+          globalParsedData = results.data;
+          renderHRMSTable(globalParsedData);
+          loader.classList.add('hidden');
+          tableWrapper.classList.remove('hidden');
+        },
+        error: function(err) {
+          alert('Failed to load Google Sheet data. Please check connection.');
+          console.error(err);
+        }
+      });
     }
+
+    function renderHRMSTable(rows) {
+      const tableHead = document.getElementById('tableHead');
+      const tableBody = document.getElementById('tableBody');
+      const statTotal = document.getElementById('statTotal');
+      const statCols = document.getElementById('statCols');
+
+      tableHead.innerHTML = '';
+      tableBody.innerHTML = '';
+
+      if (!rows || rows.length === 0) {
+        statTotal.textContent = '0';
+        statCols.textContent = '0';
+        tableBody.innerHTML = `<tr><td class="p-8 text-center text-slate-400 font-normal">No employee data found in this sheet.</td></tr>`;
+        return;
+      }
+
+      // Headers (First Row)
+      const headers = rows[0];
+      statCols.textContent = headers.length;
+      statTotal.textContent = rows.length - 1;
+
+      headers.forEach((header, idx) => {
+        const th = document.createElement('th');
+        th.className = "px-4 py-3 border-b border-slate-200/80 whitespace-nowrap font-bold text-slate-700";
+        th.textContent = header || `Col ${idx + 1}`;
+        tableHead.appendChild(th);
+      });
+
+      // Data Rows
+      for (let i = 1; i < rows.length; i++) {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50/80 transition border-b border-slate-100";
+
+        rows[i].forEach((cellValue) => {
+          const td = document.createElement('td');
+          td.className = "px-4 py-3 whitespace-nowrap text-slate-600";
+          
+          const val = (cellValue || '').trim();
+
+          // Auto-style status columns like "Selected", "Pending", etc.
+          if (val.toLowerCase() === 'selected' || val.toLowerCase() === 'select') {
+            td.innerHTML = `<span class="px-2.5 py-1 bg-emerald-100 text-emerald-700 font-semibold text-[10px] rounded-full uppercase tracking-wider">Selected</span>`;
+          } else if (val.toLowerCase() === 'rejected' || val.toLowerCase() === 'reject') {
+            td.innerHTML = `<span class="px-2.5 py-1 bg-rose-100 text-rose-700 font-semibold text-[10px] rounded-full uppercase tracking-wider">Rejected</span>`;
+          } else if (val.toLowerCase() === 'pending') {
+            td.innerHTML = `<span class="px-2.5 py-1 bg-amber-100 text-amber-700 font-semibold text-[10px] rounded-full uppercase tracking-wider">Pending</span>`;
+          } else {
+            td.textContent = val || '-';
+          }
+
+          tr.appendChild(td);
+        });
+
+        tableBody.appendChild(tr);
+      }
+
+      document.getElementById('filteredCount').textContent = `Showing all ${rows.length - 1} entries`;
+    }
+
+    // Instant Search / Filter Logic
+    function filterTable() {
+      const query = document.getElementById('searchInput').value.toLowerCase();
+      const rows = document.querySelectorAll('#tableBody tr');
+      let visibleCount = 0;
+
+      rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        if (text.includes(query)) {
+          row.style.display = '';
+          visibleCount++;
+        } else {
+          row.style.display = 'none';
+        }
+      });
+
+      document.getElementById('filteredCount').textContent = `Showing ${visibleCount} entries`;
+    }
+
+    // Load Default Sheet on Startup
+    loadSheetData();
   </script>
-
 </body>
 </html>
