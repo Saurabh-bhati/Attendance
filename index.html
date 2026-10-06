@@ -178,7 +178,6 @@ th{position:sticky;top:0;background:#f7f9fb;z-index:1;font-size:11px;text-transf
 </main>
 
 <script>
-// Naye Google Sheets ke CSV URL links update ho gaye hain
 const GOOGLE_SHEET_URLS = [
   "https://docs.google.com/spreadsheets/d/e/2PACX-1vRFoCW6qj1J85c8Z1sOSJqvexKtECuM1UMEANVIFQ1yVJRvGixR5VNh4VT66O23pi7p8y2sLc543337/pub?gid=625360753&single=true&output=csv",
   "https://docs.google.com/spreadsheets/d/e/2PACX-1vQYBjt11wkD13f_LHrdq_hzTV53_pObPlxxvQKTaOmxthhkk_ARzRec3asnmc1A_Bfh7-Ok74Cb2Mfh/pub?gid=1855179216&single=true&output=csv"
@@ -223,14 +222,15 @@ function cleanString(str) {
   return String(str || "").trim().toLowerCase().replace(/\s+/g, ' ');
 }
 
+// Improved Date Parser for formats like 1-Oct, 01-Oct, 1/10, etc.
 function parseSheetDate(dateStr) {
   if (!dateStr) return null;
   let str = dateStr.trim();
-  let parts = str.split("-");
+  let parts = str.split(/[-/]/);
   if (parts.length < 2) return null;
 
   let day = parseInt(parts[0], 10);
-  let monthStr = parts[1].toLowerCase();
+  let monthStr = parts[1].toLowerCase().trim();
 
   const monthMap = {
     jan: 0, january: 0, feb: 1, february: 1, mar: 2, march: 2,
@@ -240,6 +240,12 @@ function parseSheetDate(dateStr) {
   };
 
   let month = monthMap[monthStr];
+  
+  // If month is a number (e.g., 10 for Oct)
+  if (month === undefined && !isNaN(parseInt(monthStr, 10))) {
+    month = parseInt(monthStr, 10) - 1;
+  }
+
   if (month === undefined || isNaN(day)) return null;
 
   let year = new Date().getFullYear();
@@ -253,7 +259,6 @@ function formatCleanDateStr(dateObj) {
   return `${day}-${monthShort}`;
 }
 
-// Dynamic Header Search logic to avoid misaligned employee info
 function findValueByColumnHeader(headerRow, dataRow, possibleKeywords) {
   if (!headerRow || !dataRow) return "-";
   
@@ -320,7 +325,7 @@ function verifyUserAndLogin() {
     return;
   }
 
-  // Display Employee Details using Dynamic Header Finder
+  // Display Employee Info
   document.getElementById("dispEmpId").textContent = findValueByColumnHeader(currentHeaderRow, currentMatchedRow, ["emp id", "empid", "user id", "code"]);
   document.getElementById("dispEmpName").textContent = findValueByColumnHeader(currentHeaderRow, currentMatchedRow, ["emp name", "employee name", "name"]);
   document.getElementById("dispFatherName").textContent = findValueByColumnHeader(currentHeaderRow, currentMatchedRow, ["father", "father name", "father's name"]);
@@ -335,11 +340,6 @@ function verifyUserAndLogin() {
   for(let col = 0; col < currentMatchedRow.length; col++){
     let dateStr = currentHeaderRow && currentHeaderRow[col] ? currentHeaderRow[col].trim() : "";
     if(!dateStr) continue;
-
-    let lowerDate = dateStr.toLowerCase();
-    if(lowerDate.includes("present") || lowerDate.includes("total") || lowerDate.includes("night") || lowerDate.includes("absent") || lowerDate.includes("leave") || lowerDate.includes("name") || lowerDate.includes("emp") || lowerDate.includes("father") || lowerDate.includes("dept") || lowerDate.includes("vendor") || lowerDate.includes("status")) {
-      continue;
-    }
 
     let parsedDate = parseSheetDate(dateStr);
     if(parsedDate) {
@@ -415,11 +415,7 @@ function renderSelectedMonthAttendance() {
   let [targetYear, targetMonth] = selectedKey.split("-").map(Number);
 
   let tbodyHtml = "";
-  // All Status Counters
   let totalDays = 0, pCount = 0, nCount = 0, hdCount = 0, hnCount = 0, hCount = 0, lCount = 0, aCount = 0, hpCount = 0, nhpCount = 0;
-  
-  const today = new Date();
-  today.setHours(23, 59, 59, 999);
 
   dateColumnsInfo.forEach(item => {
     let d = item.dateObj;
@@ -437,8 +433,6 @@ function renderSelectedMonthAttendance() {
     }
 
     if(itemCycleMonth === targetMonth && itemCycleYear === targetYear) {
-      if(d > today) return;
-
       let statusVal = currentMatchedRow[item.colIndex] ? String(currentMatchedRow[item.colIndex]).trim() : "";
       let upperStatus = statusVal.toUpperCase();
 
@@ -450,7 +444,6 @@ function renderSelectedMonthAttendance() {
       totalDays++;
       let statusClass = "";
 
-      // Comprehensive status evaluation
       if(upperStatus === "P") { pCount++; statusClass = "status-P"; }
       else if(upperStatus === "N") { nCount++; statusClass = "status-N"; }
       else if(upperStatus === "HD") { hdCount++; statusClass = "status-HD"; }
@@ -468,7 +461,6 @@ function renderSelectedMonthAttendance() {
     }
   });
 
-  // Render values to UI
   document.getElementById("attendanceTbody").innerHTML = tbodyHtml;
   document.getElementById("kpiTotal").textContent = totalDays;
   document.getElementById("kpiPresent").textContent = pCount;
